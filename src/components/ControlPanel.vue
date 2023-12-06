@@ -1,6 +1,6 @@
 <template>
   <!-- 节点状态控制面板 -->
-  <div>节点控制面板</div>
+  <div>节点控制面板啦啦啦</div>
 </template>
 <script>
 export default {
