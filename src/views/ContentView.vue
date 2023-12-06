@@ -92,6 +92,11 @@ export default {
           type: "polyline", // 线条类型，直线：line，三次贝塞尔曲线：cubic，二次贝塞尔曲线：quadratic，圆弧：arc
           style: {
             offset: 15,
+            endArrow: {
+              path: "M 0,0 L 4,2 L 4,-2 Z",
+              fill: "#ccc",
+            },
+            zIndex: 2,
             radius: 3,
           },
           // controlPoints: [

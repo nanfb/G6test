@@ -52,7 +52,7 @@ export default {
 .node_panel {
   position: absolute;
   left: 10px;
-  top: 10px;
+  top: 60px;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
   box-sizing: border-box;
   padding: 10px 5px;

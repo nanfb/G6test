@@ -31,7 +31,7 @@ export function init({ el, width, height, options }) {
         nodeStateStyles: nodeGlobalState,
         edgeStateStyles: edgeGlobalState,
         enabledStack: true, // 启用 redo undo
-        linkCenter: true, // 连线中心
+        // linkCenter: true, // 连线中心
         plugins: [SnapLine, toolbar, Grid],
     });
 }
