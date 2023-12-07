@@ -22,7 +22,64 @@ const Grid = new G6.Grid();
 // conf
 let w = 500;
 let h = 500;
+let createNode = () => {
+    G6.registerNode(
+        'valve',
+        {
+            drawShape(cfg, group) {
+                const shape = group.addShape('polygon', {
+                    padding: '2px',
+                    attrs: {
+                        x: 1,
+                        y: 1,
+
+                        points: [
+                            [0, 0],
+                            [0, 10],
+                            [5, 5],
+                            [10, 0],
+                            [10, 10],
+                            [5, 5],
+                            [0, 0],
+                        ],
+                        stroke: '#000',
+                        fill: 'green',
+                        cursor: 'move'
+                    },
+                    linkPoints: {
+                        top: true,
+                        bottom: true,
+                        left: true,
+                        right: true,
+                        size: 5,
+                        fill: '#fff',
+                    },
+                    name: 'body',
+                    draggable: true,
+                });
+                group.addShape('text', {
+                    attrs: {
+                        x: 5,
+                        y: 15,
+                        textAlign: 'center',
+                        textBaseline: 'middle',
+                        text: cfg.label,
+                        fill: '#000',
+                        fontSize: 8,
+                        cursor: 'move'
+                    },
+                    name: 'description',
+                    draggable: true,
+                });
+                return shape;
+            }
+        },
+        // 'single-node'  // 这里继承节点可能要重写一下，不然会跟原有的冲突
+    )
+}
 export function init({ el, width, height, options }) {
+    // 注册自定义节点
+    createNode();
     return new G6.Graph({
         container: el,
         width: width ? width : w,
@@ -34,4 +91,5 @@ export function init({ el, width, height, options }) {
         // linkCenter: true, // 连线中心
         plugins: [SnapLine, toolbar, Grid],
     });
+
 }

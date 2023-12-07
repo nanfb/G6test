@@ -1,12 +1,14 @@
 // 边全局状态
 export const edgeGlobalState = {
-    selected: {
-        stroke: '#f00',
-        lineWidth: 3,
-    },
+
     hover: {
         stroke: '#f00',
-        lineWidth: 3,
+        lineWidth: 2,
         cursor: 'pointer',
-    }
+    },
+    selected: {
+        stroke: '#7622FF',
+        lineWidth: 1,
+        lineDash: [4, 4],
+    },
 };

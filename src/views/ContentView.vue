@@ -28,23 +28,42 @@ export default {
           {
             id: "node1", // String，该节点存在则必须，节点的唯一标识
             label: "节点1", // String，可选，节点的文本标签
-            labelCfg: {
-              position: "center", // String，可选，文本标签的位置，可选值为：'left' | 'right' | 'top' | 'bottom' | 'center'
-            },
+
             type: "rect", // String，可选，节点的形状
             size: [30, 30], // Number[]，可选，节点大小
             x: 0, // Number，可选，节点位置的 x 值
             y: 0, // Number，可选，节点位置的 y 值
+            anchorPoints: [
+              [0.5, 1],
+              [0.5, 0],
+              [1, 0.5],
+              [0, 0.5],
+            ],
           },
           {
             id: "node2", // String，该节点存在则必须，节点的唯一标识
             x: 300, // Number，可选，节点位置的 x 值
             y: 200, // Number，可选，节点位置的 y 值
+            anchorPoints: [
+              [0.5, 1],
+              [0.5, 0],
+              [1, 0.5],
+              [0, 0.5],
+            ],
           },
           {
-            id: "node3", // String，该节点存在则必须，节点的唯一标识
-            x: 200, // Number，可选，节点位置的 x 值
-            y: 200, // Number，可选，节点位置的 y 值
+            x: -30,
+            y: 120,
+            label: "阀门",
+            color: "red",
+            id: "valve1",
+            type: "valve",
+            anchorPoints: [
+              [0.5, 1],
+              [0.5, 0],
+              [1, 0.5],
+              [0, 0.5],
+            ],
           },
         ],
         // 边集
@@ -55,7 +74,11 @@ export default {
           },
           {
             source: "node1", // String，必须，起始点 id
-            target: "node3", // String，必须，目标点 id
+            target: "valve1", // String，必须，目标点 id
+          },
+          {
+            source: "valve1", // String，必须，起始点 id
+            target: "node2", // String，必须，目标点 id
           },
         ],
       },
@@ -76,14 +99,45 @@ export default {
         fitView: true, // 图自动适配画布大小
         fitViewPadding: [20, 20, 20, 70], // [number, number, number, number] 图适应画布留白
         modes: {
-          // 这里可以定义两个模式，默认模式和编辑模式，编辑模式下可以拖拽节点 使用 graph.setMode();切换指定模式
-          default: ["zoom-canvas", "drag-canvas", "drag-node"],
+          // 这里可以定义两个模式，默认模式(default)和编辑模式(edit)，编辑模式下可以拖拽节点 使用 graph.setMode();切换指定模式
+          default: [
+            "zoom-canvas",
+            "drag-canvas",
+            "drag-node",
+            {
+              type: "brush-select",
+              trigger: "ctrl",
+              selectedState: "selected",
+              includeEdges: true,
+              brushStyle: {
+                stroke: "#1890FF",
+                lineWidth: 1,
+                fill: "#A7FFCE",
+                fillOpacity: 0.3,
+              },
+            },
+          ],
           edit: ["drag-node"],
         },
         autoPaint: true, // 更新视图后自动重绘 后续改成--》在批量操作节点的时候开启
         defaultNode: {
           // 节点默认配置，会被写入的 dataNode 覆盖
           size: 20,
+          linkPoints: {
+            top: true,
+            bottom: true,
+            left: true,
+            right: true,
+            size: 5,
+            fill: "#fff",
+          },
+          labelCfg: {
+            position: "center", // String，可选，文本标签的位置，可选值为：'left' | 'right' | 'top' | 'bottom' | 'center'
+            style: {
+              fill: "#000", // String，可选，文本的颜色
+              fontSize: 8, // Number，可选，文本大小
+            },
+          },
         },
         defaultEdge: {
           // 边默认配置，会被写入到边的 model 中
@@ -94,10 +148,10 @@ export default {
             offset: 15,
             endArrow: {
               path: "M 0,0 L 4,2 L 4,-2 Z",
-              fill: "#ccc",
+              fill: "#333",
             },
             zIndex: 2,
-            radius: 3,
+            radius: 1,
           },
           // controlPoints: [
           //   // 指定三次贝塞尔曲线的 controlPoints 属性
@@ -106,6 +160,7 @@ export default {
       },
     };
     this.graph = createGrpah(conf); // 初始化图
+    this.graph.get("canvas").set("localRefresh", false); // 关闭局部刷新，判定不准确，拖拽有残影
     this.graph.data(this.sourceData); // 读取数据源到图上
     this.graph.render(); // 渲染图
     // 事件注册
@@ -125,6 +180,17 @@ export default {
   methods: {
     addNode({ type, model }) {
       this.graph.addItem("node", model);
+      // 测试
+      // for (let i = 0; i < 300; i++) {
+      //   console.log(model.x, model.y);
+      //   this.graph.addItem("node", {
+      //     ...model,
+      //     id: "node" + Math.random(),
+      //     type: type,
+      //     x: 1213 * Math.random(),
+      //     y: 1021 * Math.random(),
+      //   });
+      // }
     },
     // NDOE-EVENT
     nodeMouseEnter(e) {
@@ -132,6 +198,9 @@ export default {
     },
     nodeMouseLeave(e) {
       this.graph.setItemState(e.item, "hover", false);
+    },
+    nodeClick(e) {
+      this.graph.setItemState(e.item, "selected", true);
     },
     // EDGE-EVENT
     edgeMouseEnter(e) {
@@ -147,8 +216,12 @@ export default {
     graphClick(e) {
       // 清除所有边的选中状态
       const edges = this.graph.findAllByState("edge", "selected");
+      const nodes = this.graph.findAllByState("node", "selected");
       edges.forEach((edge) => {
         this.graph.setItemState(edge, "selected", false);
+      });
+      nodes.forEach((node) => {
+        this.graph.setItemState(node, "selected", false);
       });
     },
 
@@ -157,6 +230,7 @@ export default {
       // node
       registeredGraphEvent.call(this, "node:mouseenter", this.nodeMouseEnter);
       registeredGraphEvent.call(this, "node:mouseleave", this.nodeMouseLeave);
+      registeredGraphEvent.call(this, "node:click", this.nodeClick);
       // edge
       registeredGraphEvent.call(this, "edge:mouseenter", this.edgeMouseEnter);
       registeredGraphEvent.call(this, "edge:mouseleave", this.edgeMouseLeave);
@@ -177,7 +251,6 @@ export default {
   box-sizing: border-box;
   overflow: hidden;
   #mountNode {
-    // display: inline-block;
     width: calc(100% - 300px);
     flex: 1;
     height: 100vh;

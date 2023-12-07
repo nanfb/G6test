@@ -21,23 +21,30 @@ export default {
   name: "node-panel",
   data() {
     return {
-      nodeList: ["rect", "circle"],
+      nodeList: ["valve", "circle"],
     };
   },
   props: ["graph"],
   mounted() {},
   methods: {
     addNode(type, e) {
-      if (e.dataTransfer.dropEffect === "none") {
-        return;
-      }
+      if (e.dataTransfer.dropEffect === "none") return;
       const point = this.graph.getPointByClient(e.x, e.y);
       const model = {
         id: "node" + Math.random(),
-        label: type,
+        label: type + "1",
         type: type,
         x: point.x,
         y: point.y,
+        labelCfg: {
+          // offset: , // Number，可选，文本距离节点的距离
+          position: "bottom", // String，可选，文本标签的位置，可选值为：'left' | 'right' | 'top' | 'bottom' | 'center'
+          style: {
+            fill: "#000", // String，可选，文本的颜色
+            fontSize: 8, // Number，可选，文本大小
+            marginTop: 10,
+          },
+        },
       };
       this.$emit("addNode", {
         type,
