@@ -32,7 +32,7 @@ export default {
       const point = this.graph.getPointByClient(e.x, e.y);
       const model = {
         id: "node" + Math.random(),
-        label: type + "1",
+        text: type + "1",
         type: type,
         x: point.x,
         y: point.y,

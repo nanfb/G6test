@@ -1,6 +1,12 @@
 import G6 from '@antv/g6';
 import { nodeGlobalState } from './globalState/nodeGlobalState'
 import { edgeGlobalState } from './globalState/edgeGlobalState'
+// 注册自定义节点
+import { RegisterCustomNode } from './customNodeConfiguration/utils/RegisterCustomNode'
+// 自定义节点配置
+import valve from './customNodeConfiguration/valve.js';
+import rectlink from './customNodeConfiguration/rectLink.js';
+rectlink.init()
 // 插件注册
 const SnapLine = new G6.SnapLine({
     line: {
@@ -22,64 +28,11 @@ const Grid = new G6.Grid();
 // conf
 let w = 500;
 let h = 500;
-let createNode = () => {
-    G6.registerNode(
-        'valve',
-        {
-            drawShape(cfg, group) {
-                const shape = group.addShape('polygon', {
-                    padding: '2px',
-                    attrs: {
-                        x: 1,
-                        y: 1,
+// 注册自定义节点
 
-                        points: [
-                            [0, 0],
-                            [0, 10],
-                            [5, 5],
-                            [10, 0],
-                            [10, 10],
-                            [5, 5],
-                            [0, 0],
-                        ],
-                        stroke: '#000',
-                        fill: 'green',
-                        cursor: 'move'
-                    },
-                    linkPoints: {
-                        top: true,
-                        bottom: true,
-                        left: true,
-                        right: true,
-                        size: 5,
-                        fill: '#fff',
-                    },
-                    name: 'body',
-                    draggable: true,
-                });
-                group.addShape('text', {
-                    attrs: {
-                        x: 5,
-                        y: 15,
-                        textAlign: 'center',
-                        textBaseline: 'middle',
-                        text: cfg.label,
-                        fill: '#000',
-                        fontSize: 8,
-                        cursor: 'move'
-                    },
-                    name: 'description',
-                    draggable: true,
-                });
-                return shape;
-            }
-        },
-        // 'single-node'  // 这里继承节点可能要重写一下，不然会跟原有的冲突
-    )
-}
 export function init({ el, width, height, options }) {
     // 注册自定义节点
-    createNode();
+    RegisterCustomNode([valve], G6);
     return new G6.Graph({
         container: el,
         width: width ? width : w,
@@ -87,9 +40,11 @@ export function init({ el, width, height, options }) {
         ...options,
         nodeStateStyles: nodeGlobalState,
         edgeStateStyles: edgeGlobalState,
-        enabledStack: true, // 启用 redo undo
-        // linkCenter: true, // 连线中心
+        //
+        enabledStack: true, // 启用 redo undo 栈
+        // linkCenter: true, // 连线到节点中心
         plugins: [SnapLine, toolbar, Grid],
     });
+
 
 }

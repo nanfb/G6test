@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import ContentView from "./views/ContentView.vue";
+import ContentView from "./views/ContentView2.vue";
 export default {
   name: "App",
   components: {
