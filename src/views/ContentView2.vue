@@ -12,6 +12,7 @@ import NodePanel from "@/components/NodePanel.vue";
 import ControlPanel from "@/components/ControlPanel.vue";
 import { init as createGrpah } from "./base/G6";
 import registeredGraphEvent from "./base/registeredGraphEvent";
+// 这个函数是为了修改多边的布局状态
 const processParallelEdgesOnAnchorPoint = (
   edges,
   offsetDiff = 15,
@@ -138,68 +139,11 @@ export default {
       container: null, // 容器
       sourceData: {
         nodes: [
-          {
-            id: "node1", // String，该节点存在则必须，节点的唯一标识
-            label: "节点1", // String，可选，节点的文本标签
-            type: "rect", // String，可选，节点的形状
-            size: [30, 30], // Number[]，可选，节点大小
-            x: 0, // Number，可选，节点位置的 x 值
-            y: 0, // Number，可选，节点位置的 y 值
-            anchorPoints: [
-              [0.5, 1],
-              [0.5, 0],
-              [1, 0.5],
-              [0, 0.5],
-            ],
-          },
-          {
-            id: "node2", // String，该节点存在则必须，节点的唯一标识
-            x: 300, // Number，可选，节点位置的 x 值
-            y: 200, // Number，可选，节点位置的 y 值
-            anchorPoints: [
-              [0.5, 1],
-              [0.5, 0],
-              [1, 0.5],
-              [0, 0.5],
-            ],
-          },
-          {
-            x: 10,
-            y: 120,
-            text: "阀门",
-            color: "red",
-            id: "valve1",
-            type: "valve",
-            anchorPoints: [
-              [0.5, 1],
-              [0.5, 0],
-              [1, 0.5],
-              [0, 0.5],
-            ],
-          },
-          {
-            x: -30,
-            y: 30,
-            color: "red",
-            id: "testcbsianl",
-            type: "rect-node",
-          },
+          { id: "node1", type: "rect-node", x: 1, y: 10 },
+          { id: "node2", type: "rect-node", x: 10, y: 150 },
         ],
         // 边集
-        edges: [
-          {
-            source: "node1", // String，必须，起始点 id
-            target: "node2", // String，必须，目标点 id
-          },
-          {
-            source: "node1", // String，必须，起始点 id
-            target: "valve1", // String，必须，目标点 id
-          },
-          {
-            source: "valve1", // String，必须，起始点 id
-            target: "node2", // String，必须，目标点 id
-          },
-        ],
+        edges: [],
       },
       sourceAnchorIdx: undefined, // 起始锚点索引
       targetAnchorIdx: undefined, // 目标锚点索引
@@ -224,25 +168,30 @@ export default {
           default: [
             "zoom-canvas",
             "drag-canvas",
-            "drag-node",
+            {
+              type: "drag-node",
+              shouldBegin: (e) => {
+                // 这里对节点的的图元 name 进行过滤
+                if (e.target.get("name") === "anchor-point") return false;
+                return true;
+              },
+            },
             {
               type: "create-edge",
-              trigger: "drag", // set the trigger to be drag to make the create-edge triggered by drag
+              trigger: "drag",
               shouldBegin: (e) => {
-                // avoid beginning at other shapes on the node
                 if (e.target && e.target.get("name") !== "anchor-point")
                   return false;
                 this.sourceAnchorIdx = e.target.get("anchorPointIdx");
-                e.target.set("links", e.target.get("links") + 1); // cache the number of edge connected to this anchor-point circle
+                e.target.set("links", e.target.get("links") + 1);
                 return true;
               },
               shouldEnd: (e) => {
-                // avoid ending at other shapes on the node
                 if (e.target && e.target.get("name") !== "anchor-point")
                   return false;
                 if (e.target) {
                   this.targetAnchorIdx = e.target.get("anchorPointIdx");
-                  e.target.set("links", e.target.get("links") + 1); // cache the number of edge connected to this anchor-point circle
+                  e.target.set("links", e.target.get("links") + 1);
                   return true;
                 }
                 this.targetAnchorIdx = undefined;
@@ -266,16 +215,6 @@ export default {
         },
         autoPaint: true, // 更新视图后自动重绘 后续改成--》在批量操作节点的时候开启
         defaultNode: {
-          // 节点默认配置，会被写入的 dataNode 覆盖
-          size: 20,
-          linkPoints: {
-            top: true,
-            bottom: true,
-            left: true,
-            right: true,
-            size: 5,
-            fill: "#fff",
-          },
           labelCfg: {
             position: "center", // String，可选，文本标签的位置，可选值为：'left' | 'right' | 'top' | 'bottom' | 'center'
             style: {
@@ -287,34 +226,24 @@ export default {
         defaultEdge: {
           // 边默认配置，会被写入到边的 model 中
           size: 1, // 线条粗细
-          color: "#333", // 线条颜色
+          color: "blue", // 线条颜色
           type: "polyline", // 线条类型，直线：line，三次贝塞尔曲线：cubic，二次贝塞尔曲线：quadratic，圆弧：arc
-          style: {
-            offset: 15,
-            endArrow: {
-              path: "M 0,0 L 4,2 L 4,-2 Z",
-              fill: "#333",
-            },
-            zIndex: 2,
-            radius: 1,
-          },
           // controlPoints: [
           //   // 指定三次贝塞尔曲线的 controlPoints 属性
           // ],
         },
       },
     };
+
     this.graph = createGrpah(conf); // 初始化图
     this.graph.get("canvas").set("localRefresh", false); // 关闭局部刷新，判定不准确，拖拽有残影
     this.graph.data(this.sourceData); // 读取数据源到图上
     this.graph.render(); // 渲染图
     // 事件注册
-    this.initGraphEvent();
+    this.initGraphEvent(this.graph);
     window.addEventListener("resize", () => {
       if (!this.graph || this.graph.get("destroyed")) return;
-      if (!this.container) {
-        return;
-      }
+      if (!this.container) return;
       this.$nextTick(() => {
         let width = this.container.offsetWidth || 500;
         let height = this.container.offsetHeight || 500;
@@ -337,66 +266,22 @@ export default {
       //   });
       // }
     },
-    // NDOE-EVENT
-    nodeMouseEnter(e) {
-      this.graph.setItemState(e.item, "hover", true);
-    },
-    nodeMouseLeave(e) {
-      this.graph.setItemState(e.item, "hover", false);
-    },
-    nodeClick(e) {
-      console.log(e);
-      this.graph.setItemState(e.item, "selected", true);
-    },
-    // EDGE-EVENT
-    edgeMouseEnter(e) {
-      this.graph.setItemState(e.item, "hover", true);
-    },
-    edgeMouseLeave(e) {
-      this.graph.setItemState(e.item, "hover", false);
-    },
-    edgeClick(e) {
-      this.graph.setItemState(e.item, "selected", true);
-    },
-    // CANVAS-EVENT
-    graphClick(e) {
-      // 清除所有边的选中状态
-      const edges = this.graph.findAllByState("edge", "selected");
-      const nodes = this.graph.findAllByState("node", "selected");
-      edges.forEach((edge) => {
-        this.graph.setItemState(edge, "selected", false);
-      });
-      nodes.forEach((node) => {
-        this.graph.setItemState(node, "selected", false);
-      });
-    },
 
     // 事件注册
-    initGraphEvent() {
-      // node
-      registeredGraphEvent.call(this, "node:mouseenter", this.nodeMouseEnter);
-      registeredGraphEvent.call(this, "node:mouseleave", this.nodeMouseLeave);
-      registeredGraphEvent.call(this, "node:click", this.nodeClick);
-      // edge
-      registeredGraphEvent.call(this, "edge:mouseenter", this.edgeMouseEnter);
-      registeredGraphEvent.call(this, "edge:mouseleave", this.edgeMouseLeave);
-      registeredGraphEvent.call(this, "edge:click", this.edgeClick);
-      // canvas
-      registeredGraphEvent.call(this, "canvas:click", this.graphClick);
-
-      // vbnm,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-      this.graph.on("aftercreateedge", (e) => {
-        // update the sourceAnchor and targetAnchor for the newly added edge
-        this.graph.updateItem(e.edge, {
+    initGraphEvent(graph) {
+      graph.on("aftercreateedge", (e) => {
+        graph.updateItem(e.edge, {
+          // 更新索引
           sourceAnchor: this.sourceAnchorIdx,
           targetAnchor: this.targetAnchorIdx,
         });
 
         // update the curveOffset for parallel edges
-        const edges = this.graph.save().edges;
+        const edges = graph.save().edges;
         processParallelEdgesOnAnchorPoint(edges);
-        this.graph.getEdges().forEach((edge, i) => {
-          this.graph.updateItem(edge, {
+        graph.getEdges().forEach((edge, i) => {
+          graph.updateItem(edge, {
+            type: "polyline",
             curveOffset: edges[i].curveOffset,
             curvePosition: edges[i].curvePosition,
           });
@@ -404,19 +289,18 @@ export default {
       });
 
       // after drag from the first node, the edge is created, update the sourceAnchor
-      this.graph.on("afteradditem", (e) => {
+      graph.on("afteradditem", (e) => {
         if (e.item && e.item.getType() === "edge") {
-          this.graph.updateItem(e.item, {
+          graph.updateItem(e.item, {
             sourceAnchor: this.sourceAnchorIdx,
           });
         }
       });
-
       // if create-edge is canceled before ending, update the 'links' on the anchor-point circles
-      this.graph.on("afterremoveitem", (e) => {
+      graph.on("afterremoveitem", (e) => {
         if (e.item && e.item.source && e.item.target) {
-          const sourceNode = this.graph.findById(e.item.source);
-          const targetNode = this.graph.findById(e.item.target);
+          const sourceNode = graph.findById(e.item.source);
+          const targetNode = graph.findById(e.item.target);
           const { sourceAnchor, targetAnchor } = e.item;
           if (sourceNode && !isNaN(sourceAnchor)) {
             const sourceAnchorShape = sourceNode
@@ -439,6 +323,34 @@ export default {
             targetAnchorShape.set("links", targetAnchorShape.get("links") - 1);
           }
         }
+      });
+      // 连接桩的显示隐藏
+      graph.on("node:mouseenter", (e) => {
+        graph.setItemState(e.item, "showAnchors", true);
+      });
+      graph.on("node:mouseleave", (e) => {
+        graph.setItemState(e.item, "showAnchors", false);
+      });
+      graph.on("node:dragenter", (e) => {
+        graph.setItemState(e.item, "showAnchors", true);
+      });
+      graph.on("node:dragleave", (e) => {
+        graph.setItemState(e.item, "showAnchors", false);
+      });
+      graph.on("node:dragstart", (e) => {
+        graph.setItemState(e.item, "showAnchors", true);
+      });
+      graph.on("node:dragout", (e) => {
+        graph.setItemState(e.item, "showAnchors", false);
+      });
+      graph.on("edge:click", (e) => {
+        graph.setItemState(e.item, "selected", true);
+      });
+      graph.on("edge:mouseenter", (e) => {
+        graph.setItemState(e.item, "hover", true);
+      });
+      graph.on("edge:mouseleave", (e) => {
+        graph.setItemState(e.item, "hover", false);
       });
     },
   },

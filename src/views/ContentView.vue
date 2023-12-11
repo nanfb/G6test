@@ -12,7 +12,8 @@ import NodePanel from "@/components/NodePanel.vue";
 import ControlPanel from "@/components/ControlPanel.vue";
 import { init as createGrpah } from "./base/G6";
 import registeredGraphEvent from "./base/registeredGraphEvent";
-
+// 路径重复
+import { processParallelEdgesOnAnchorPoint } from "./base/edgeutils/useOnAnchorPoint";
 export default {
   name: "ContentView",
   components: {
@@ -102,11 +103,36 @@ export default {
           default: [
             "zoom-canvas",
             "drag-canvas",
-            "drag-node",
-            // {
-            //   type: "create-edge",
-            //   trigger: "click",
-            // },
+            {
+              type: "drag-node",
+              shouldBegin: (e) => {
+                // 这里对节点的的图元 name 进行过滤
+                if (e.target.get("name") === "anchor-point") return false;
+                return true;
+              },
+            },
+            {
+              type: "create-edge",
+              trigger: "drag",
+              shouldBegin: (e) => {
+                if (e.target && e.target.get("name") !== "anchor-point")
+                  return false;
+                this.sourceAnchorIdx = e.target.get("anchorPointIdx");
+                e.target.set("links", e.target.get("links") + 1);
+                return true;
+              },
+              shouldEnd: (e) => {
+                if (e.target && e.target.get("name") !== "anchor-point")
+                  return false;
+                if (e.target) {
+                  this.targetAnchorIdx = e.target.get("anchorPointIdx");
+                  e.target.set("links", e.target.get("links") + 1);
+                  return true;
+                }
+                this.targetAnchorIdx = undefined;
+                return true;
+              },
+            },
             {
               type: "brush-select",
               trigger: "ctrl",
@@ -229,6 +255,23 @@ export default {
       });
     },
 
+    afterCreateEdge(e) {
+      this.graph.updateItem(e.edge, {
+        // 更新索引
+        sourceAnchor: this.sourceAnchorIdx,
+        targetAnchor: this.targetAnchorIdx,
+      });
+      const edges = this.initGraphEventgraph.save().edges;
+      processParallelEdgesOnAnchorPoint(edges);
+      this.graph.getEdges().forEach((edge, i) => {
+        this.graph.updateItem(edge, {
+          type: "polyline",
+          curveOffset: edges[i].curveOffset,
+          curvePosition: edges[i].curvePosition,
+        });
+      });
+    },
+
     // 事件注册
     initGraphEvent() {
       // node
@@ -241,6 +284,83 @@ export default {
       registeredGraphEvent.call(this, "edge:click", this.edgeClick);
       // canvas
       registeredGraphEvent.call(this, "canvas:click", this.graphClick);
+      // anchor-point 相关
+      registeredGraphEvent.call(this, "aftercreateedge", this.afterCreateEdge);
+
+      // graph.on("aftercreateedge", (e) => {
+      //   graph.updateItem(e.edge, {
+      //     // 更新索引
+      //     sourceAnchor: this.sourceAnchorIdx,
+      //     targetAnchor: this.targetAnchorIdx,
+      //   });
+
+      //   // update the curveOffset for parallel edges
+      //   const edges = graph.save().edges;
+      //   processParallelEdgesOnAnchorPoint(edges);
+      //   graph.getEdges().forEach((edge, i) => {
+      //     graph.updateItem(edge, {
+      //       type: "polyline",
+      //       curveOffset: edges[i].curveOffset,
+      //       curvePosition: edges[i].curvePosition,
+      //     });
+      //   });
+      // });
+
+      // // after drag from the first node, the edge is created, update the sourceAnchor
+      // graph.on("afteradditem", (e) => {
+      //   if (e.item && e.item.getType() === "edge") {
+      //     graph.updateItem(e.item, {
+      //       sourceAnchor: this.sourceAnchorIdx,
+      //     });
+      //   }
+      // });
+      // // if create-edge is canceled before ending, update the 'links' on the anchor-point circles
+      // graph.on("afterremoveitem", (e) => {
+      //   if (e.item && e.item.source && e.item.target) {
+      //     const sourceNode = graph.findById(e.item.source);
+      //     const targetNode = graph.findById(e.item.target);
+      //     const { sourceAnchor, targetAnchor } = e.item;
+      //     if (sourceNode && !isNaN(sourceAnchor)) {
+      //       const sourceAnchorShape = sourceNode
+      //         .getContainer()
+      //         .find(
+      //           (ele) =>
+      //             ele.get("name") === "anchor-point" &&
+      //             ele.get("anchorPointIdx") === sourceAnchor
+      //         );
+      //       sourceAnchorShape.set("links", sourceAnchorShape.get("links") - 1);
+      //     }
+      //     if (targetNode && !isNaN(targetAnchor)) {
+      //       const targetAnchorShape = targetNode
+      //         .getContainer()
+      //         .find(
+      //           (ele) =>
+      //             ele.get("name") === "anchor-point" &&
+      //             ele.get("anchorPointIdx") === targetAnchor
+      //         );
+      //       targetAnchorShape.set("links", targetAnchorShape.get("links") - 1);
+      //     }
+      //   }
+      // });
+      // // 连接桩的显示隐藏
+      // graph.on("node:mouseenter", (e) => {
+      //   graph.setItemState(e.item, "showAnchors", true);
+      // });
+      // graph.on("node:mouseleave", (e) => {
+      //   graph.setItemState(e.item, "showAnchors", false);
+      // });
+      // graph.on("node:dragenter", (e) => {
+      //   graph.setItemState(e.item, "showAnchors", true);
+      // });
+      // graph.on("node:dragleave", (e) => {
+      //   graph.setItemState(e.item, "showAnchors", false);
+      // });
+      // graph.on("node:dragstart", (e) => {
+      //   graph.setItemState(e.item, "showAnchors", true);
+      // });
+      // graph.on("node:dragout", (e) => {
+      //   graph.setItemState(e.item, "showAnchors", false);
+      // });
     },
   },
 };

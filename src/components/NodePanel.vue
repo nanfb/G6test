@@ -30,9 +30,11 @@ export default {
     addNode(type, e) {
       if (e.dataTransfer.dropEffect === "none") return;
       const point = this.graph.getPointByClient(e.x, e.y);
+      console.log(point);
       const model = {
         id: "node" + Math.random(),
         text: type + "1",
+        // type: "rect-node",
         type: type,
         x: point.x,
         y: point.y,
